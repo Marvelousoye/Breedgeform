@@ -255,9 +255,26 @@ let selectedSlot = null, selectedDay = null, busy = [], slotsByDay = {};
 
 /* ========= booking: build slots from AVAIL, hide anything busy ========= */
 const pad = n => String(n).padStart(2, "0");
-const userTZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time"; } catch (e) { return "your local time"; } })();
-const fmtDay = d => d.toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"long" });
-const fmtTime = d => d.toLocaleTimeString(undefined, { hour:"numeric", minute:"2-digit" });
+/* ========= location: read the visitor's IP address (falls back to the device time zone) ========= */
+const deviceTZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; } })();
+let userTZ = deviceTZ;
+let REGION = deviceTZ === "Africa/Lagos" ? "NG" : "INTL";   // NG = naira, INTL = dollars
+const validTZ = z => { try { new Intl.DateTimeFormat(undefined, { timeZone:z }); return true; } catch (e) { return false; } };
+async function getJSON(url, ms = 4000){
+  const c = new AbortController(), t = setTimeout(() => c.abort(), ms);
+  try { const r = await fetch(url, { signal:c.signal }); if (!r.ok) throw new Error("bad"); return await r.json(); }
+  finally { clearTimeout(t); }
+}
+const geoReady = (async () => {
+  let cc = "", tz = "";
+  try { const j = await getJSON("https://ipwho.is/"); if (j && j.success !== false) { cc = j.country_code || ""; tz = (j.timezone && j.timezone.id) || ""; } } catch (e) {}
+  if (!cc) { try { const j = await getJSON("https://ipapi.co/json/"); if (j && !j.error) { cc = j.country_code || ""; tz = j.timezone || ""; } } catch (e) {} }
+  if (tz && validTZ(tz)) userTZ = tz;
+  if (cc) REGION = cc === "NG" ? "NG" : "INTL";
+  applyRegion();
+})();
+const fmtDay = d => d.toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"long", timeZone:userTZ });
+const fmtTime = d => d.toLocaleTimeString(undefined, { hour:"numeric", minute:"2-digit", timeZone:userTZ });
 
 function buildSlots(){
   const out = {}, now = Date.now(), earliest = now + AVAIL.minNoticeHours * 3600e3;
@@ -284,8 +301,9 @@ function buildSlots(){
 }
 
 async function loadBooking(){
-  $("#tz-note").textContent = `Times are automatically shown in your local time (${userTZ}). Calls last ${AVAIL.durationMin} minutes.`;
   $("#day-list").innerHTML = ""; $("#slot-list").innerHTML = `<span class="slot-empty">Loading available times…</span>`;
+  await geoReady;
+  $("#tz-note").innerHTML = `Times are shown in your time zone: <b style="color:var(--butter)">${esc(userTZ.replace(/_/g, " "))}</b>. Calls last ${AVAIL.durationMin} minutes.`;
   busy = [];
   if (BRAND.leadEndpoint) {
     try {
@@ -295,6 +313,9 @@ async function loadBooking(){
     } catch (_) { /* fall back to showing all slots; the server re-checks on submit */ }
   }
   slotsByDay = buildSlots();
+  const byDay = {}, keyFmt = new Intl.DateTimeFormat("en-CA", { timeZone:userTZ, year:"numeric", month:"2-digit", day:"2-digit" });
+  Object.values(slotsByDay).flat().forEach(s => { const k = keyFmt.format(s.start); (byDay[k] = byDay[k] || []).push(s); });
+  slotsByDay = byDay;
   renderDays();
 }
 function renderDays(){
@@ -302,7 +323,7 @@ function renderDays(){
   if (!keys.length) { $("#slot-list").innerHTML = `<span class="slot-empty">No times are open right now. Please check back soon or message us on WhatsApp.</span>`; return; }
   $("#day-list").innerHTML = keys.map(k => {
     const d = slotsByDay[k][0].start;
-    return `<button type="button" class="day" data-day="${k}" aria-pressed="false"><small>${d.toLocaleDateString(undefined,{weekday:"short"})}</small><b>${d.getDate()}</b><span>${d.toLocaleDateString(undefined,{month:"short"})}</span></button>`;
+    return `<button type="button" class="day" data-day="${k}" aria-pressed="false"><small>${d.toLocaleDateString(undefined,{weekday:"short",timeZone:userTZ})}</small><b>${d.toLocaleDateString(undefined,{day:"numeric",timeZone:userTZ})}</b><span>${d.toLocaleDateString(undefined,{month:"short",timeZone:userTZ})}</span></button>`;
   }).join("");
   const keep = selectedSlot && slotsByDay[selectedDay] ? selectedDay : keys[0];
   pickDay(keep);
@@ -327,27 +348,21 @@ $("#pkg-choices").innerHTML = TIERS.map(t => `<label class="choice"><input type=
   + `<label class="choice"><input type="radio" name="package" value="A single service"><span><b>A single service</b><small>Video editing, graphic design or content writing on its own</small></span></label>`
   + `<label class="choice"><input type="radio" name="package" value="Not sure yet"><span><b>Not sure yet</b><small>I'd like a recommendation on the discovery call</small></span></label>`;
 
-/* Region: the device's time zone decides (Nigeria's is Africa/Lagos). Nigeria sees naira, everyone else sees dollars. */
-function detectRegion(){
-  try {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (tz) return tz === "Africa/Lagos" ? "NG" : "INTL";
-    const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
-    if (langs.some(l => /-NG$/i.test(l))) return "NG";
-  } catch (e) {}
-  return "INTL";
-}
-const REGION = detectRegion();
 /* Nigeria sees naira. Everyone else sees dollars with the same number (₦320k = $320, ₦1.2M = $1200). */
 const BUDGETS = [
   { ngn:"₦800,000 – ₦1,200,000", usd:"$800 – $1200" },
   { ngn:"₦450,000 – ₦680,000",   usd:"$450 – $680" },
   { ngn:"₦320,000 – ₦450,000",   usd:"$320 – $450" }
 ];
-const CUR = REGION === "NG" ? "₦" : "$";
-$("#budget-choices").innerHTML = BUDGETS.map(b => { const t = REGION === "NG" ? b.ngn : b.usd; return `<label class="choice"><input type="radio" name="budget" value="${esc(t)}"><span><b>${esc(t)}</b></span></label>`; }).join("")
-  + `<label class="choice"><input type="radio" name="budget" value="__other"><span><b>My budget is different</b><small>Type your own monthly amount</small></span></label>`
-  + `<div id="budget-other-wrap" hidden><input class="field" id="f-budget-other" type="text" inputmode="numeric" autocomplete="off" placeholder="Amount in ${CUR === "₦" ? "naira, e.g. 380000" : "dollars, e.g. 380"}" aria-label="Your monthly budget"></div>`;
+let CUR = "$";
+function renderBudgets(){
+  CUR = REGION === "NG" ? "₦" : "$";
+  $("#budget-choices").innerHTML = BUDGETS.map(b => { const t = REGION === "NG" ? b.ngn : b.usd; return `<label class="choice"><input type="radio" name="budget" value="${esc(t)}"><span><b>${esc(t)}</b></span></label>`; }).join("")
+    + `<label class="choice"><input type="radio" name="budget" value="__other"><span><b>My budget is different</b><small>Type your own monthly amount</small></span></label>`
+    + `<div id="budget-other-wrap" hidden><input class="field" id="f-budget-other" type="text" inputmode="numeric" autocomplete="off" placeholder="Amount in ${CUR === "₦" ? "naira, e.g. 380000" : "dollars, e.g. 380"}" aria-label="Your monthly budget"></div>`;
+}
+function applyRegion(){ renderBudgets(); }
+renderBudgets();
 $("#budget-choices").addEventListener("change", () => {
   const o = picked("budget") === "__other";
   $("#budget-other-wrap").hidden = !o;
