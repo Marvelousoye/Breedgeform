@@ -1,0 +1,510 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Discovery Call Form</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,500;1,600&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050203; --surface:#0d080a; --cherry:#75070c; --cherry-deep:#380205; --butter:#ffedab; --butter-hover:#ffe58a;
+  --text:#f8f9fa; --muted:#b9b1b4; --line:rgba(255,237,171,.14); --line-strong:rgba(255,237,171,.42);
+  --ink:#050203;
+  --font-display:"Playfair Display",Georgia,serif; --font-body:"Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:14px;line-height:1.6;min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+h1,h2,h3,h4,p{margin:0}
+button{font:inherit;color:inherit;cursor:pointer;background:none;border:0}
+button:focus-visible,a:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:2px solid var(--butter);outline-offset:3px}
+.card{background:rgba(13,8,10,.72);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--line);border-radius:24px;transition:border-color .35s,box-shadow .35s,transform .25s}
+.card:hover{border-color:var(--line-strong);box-shadow:0 20px 40px -15px rgba(117,7,12,.45)}
+.eyebrow{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.25em;text-transform:uppercase;color:var(--butter);background:rgba(117,7,12,.3);border:1px solid rgba(117,7,12,.8);padding:6px 16px;border-radius:99px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:12px 24px;border-radius:99px;background:var(--butter);color:var(--ink);font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 0 35px -5px rgba(255,237,171,.35);transition:.25s}
+.btn:hover{background:var(--butter-hover);transform:scale(1.04)}
+.btn[disabled]{opacity:.4;cursor:not-allowed;transform:none}
+.ico{width:48px;height:48px;border-radius:16px;background:rgba(117,7,12,.35);border:1px solid var(--cherry);display:grid;place-items:center;margin-bottom:22px}
+.ico svg{width:22px;height:22px;stroke:var(--butter);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* application modal */
+#modal{position:fixed;inset:0;z-index:70;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;background:rgba(0,0,0,.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);overflow-y:auto}
+#modal.open{display:flex}
+.dlg{position:relative;width:100%;max-width:580px;margin-block:auto;padding:clamp(24px,5vw,44px);border-color:rgba(117,7,12,.6);box-shadow:0 30px 80px -20px #000}
+.x{position:absolute;top:14px;right:14px;width:40px;height:40px;border-radius:50%;color:#9a9396;font-size:20px}
+.x:hover{color:#fff}
+.prog-text{font-size:10px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--butter);margin-bottom:10px;padding-right:44px}
+.pbar{height:6px;border-radius:99px;background:rgba(255,255,255,.08);overflow:hidden;margin-bottom:30px}
+.pbar i{display:block;height:100%;width:10%;background:var(--butter);border-radius:99px;transition:width .3s}
+.fstep[hidden]{display:none}
+.q{display:block;font-family:var(--font-display);font-weight:700;font-style:normal;font-size:clamp(21px,4.6vw,26px);line-height:1.3;color:var(--text);margin:0 0 16px;text-wrap:balance}
+.q em{font-family:var(--font-body);font-style:normal;font-weight:500;font-size:12px;color:var(--muted);letter-spacing:.02em}
+.help{font-size:12px;color:var(--muted);margin:-6px 0 14px}
+.field{display:block;width:100%;padding:14px 16px;border-radius:14px;background:var(--bg);border:1px solid var(--line);color:var(--text);font:inherit;font-size:14px}
+.field+.field{margin-top:12px}
+.field::placeholder{color:#6f676a}
+.field:focus{border-color:var(--butter)}
+textarea.field{resize:none;min-height:116px}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:14px;border:1px solid var(--line);background:var(--bg);cursor:pointer;transition:border-color .2s,background .2s}
+.choice:hover{border-color:var(--butter)}
+.choice input{flex:none;width:16px;height:16px;margin:3px 0 0;accent-color:var(--butter)}
+.choice b{display:block;font-size:13px;font-weight:600;color:var(--text)}
+.choice small{display:block;font-size:11.5px;line-height:1.45;color:var(--muted);margin-top:2px}
+.choice:has(input:checked){border-color:var(--cherry);background:rgba(117,7,12,.3)}
+.choice:has(input:checked) b{color:var(--butter)}
+.choice:has(input:focus-visible){outline:2px solid var(--butter);outline-offset:2px}
+.pkg-note{font-size:12px;color:var(--butter);background:rgba(117,7,12,.25);border:1px solid rgba(117,7,12,.7);border-radius:12px;padding:10px 14px;margin:0 0 14px}
+.err{color:#ff9d9d;font-size:12px;font-weight:600;margin-top:16px}
+.nav{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:28px;padding-top:18px;border-top:1px solid var(--line)}
+.back{font-size:13px;font-weight:600;color:var(--muted);padding:10px 4px}
+.back:hover{color:var(--butter)}
+.nav .btn{padding:12px 26px}
+.done{text-align:center;padding-block:12px}
+.done .ico{margin-inline:auto;border-radius:50%;width:56px;height:56px}
+.done h3{font-family:var(--font-display);font-weight:700;font-size:28px;margin-bottom:10px}
+.done p{font-size:13px;color:#d3cdcf;max-width:40ch;margin-inline:auto}
+.recap{margin:20px auto 0;text-align:left;max-width:400px;font-size:12px;color:#d3cdcf;background:rgba(0,0,0,.5);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr;gap:4px 14px}
+.recap dt{color:var(--muted)}.recap dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.done .actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:22px}
+.btn.sec{background:rgba(255,255,255,.08);color:var(--butter);box-shadow:none}
+.btn.sec:hover{background:var(--cherry)}
+
+
+/* booking step */
+.tz-note{font-size:11.5px;color:var(--muted);margin:0 0 14px}
+.days{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:16px;scrollbar-width:thin}
+.day{flex:none;min-width:64px;padding:10px 8px;border-radius:14px;border:1px solid var(--line);background:var(--bg);text-align:center;transition:border-color .2s,background .2s}
+.day:hover{border-color:var(--butter)}
+.day small{display:block;font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.day b{display:block;font-size:18px;font-weight:700;line-height:1.3}
+.day span{display:block;font-size:10px;color:var(--muted)}
+.day[aria-pressed="true"]{border-color:var(--cherry);background:rgba(117,7,12,.35)}
+.day[aria-pressed="true"] b,.day[aria-pressed="true"] small{color:var(--butter)}
+.slots{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;min-height:44px}
+.slot{padding:11px 8px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:13px;font-weight:600;transition:border-color .2s,background .2s}
+.slot:hover{border-color:var(--butter)}
+.slot[aria-pressed="true"]{border-color:var(--cherry);background:rgba(117,7,12,.35);color:var(--butter)}
+.slot-empty{grid-column:1/-1;font-size:12px;color:var(--muted)}
+.chosen{margin-top:16px;font-size:12.5px;color:var(--butter);background:rgba(117,7,12,.25);border:1px solid rgba(117,7,12,.7);border-radius:12px;padding:10px 14px}
+.meetnote{margin-top:14px;font-size:12px;color:var(--muted)}
+
+/* demo page around the button (delete freely) */
+.demo{text-align:center;max-width:520px;display:flex;flex-direction:column;align-items:center;gap:18px}
+.demo h1{font-size:clamp(26px,5vw,38px);font-weight:800;line-height:1.15}
+.demo p{color:var(--muted)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="demo">
+  <span class="eyebrow">Discovery call</span>
+  <h1>Tell us about your brand</h1>
+  <p>This button opens the application form. Move the button anywhere, or give any element a <code>data-open</code> attribute.</p>
+  <button class="btn" data-open>Book a Call <span aria-hidden="true">→</span></button>
+</div>
+
+<!-- APPLICATION MODAL -->
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="m-progress">
+  <div class="card dlg">
+    <button class="x" id="m-close" type="button" aria-label="Close application form">✕</button>
+    <div id="m-head">
+      <div class="prog-text" id="m-progress">Step 1 of 11</div>
+      <div class="pbar" aria-hidden="true"><i id="m-bar"></i></div>
+    </div>
+
+    <form id="lead-form" novalidate>
+      <div class="fstep" data-step="1">
+        <label class="q" for="f-name">1. Full name</label>
+        <input class="field" id="f-name" type="text" autocomplete="name" placeholder="e.g., Sarah Jenkins">
+      </div>
+      <div class="fstep" data-step="2" hidden>
+        <label class="q" for="f-biz">2. Business or brand name</label>
+        <input class="field" id="f-biz" type="text" autocomplete="organization" placeholder="e.g., Nova Advisory">
+      </div>
+      <div class="fstep" data-step="3" hidden>
+        <label class="q" for="f-about">3. What is your brand about, and who do you want to reach?</label>
+        <textarea class="field" id="f-about" rows="4" placeholder="Briefly describe what your brand stands for and the people you want to reach..."></textarea>
+      </div>
+      <div class="fstep" data-step="4" hidden>
+        <p class="q" id="q-online">4. Where can we see your brand online? <em>(Optional)</em></p>
+        <input class="field" id="f-site" type="text" inputmode="url" autocomplete="url" placeholder="https://yourwebsite.com" aria-label="Website">
+        <input class="field" id="f-social" type="text" placeholder="@yourbrand" aria-label="Main social media handle">
+      </div>
+      <div class="fstep" data-step="5" hidden>
+        <p class="q" id="q-pkg">5. Which package are you interested in?</p>
+        <p class="pkg-note" id="pkg-note" hidden></p>
+        <div class="choices" id="pkg-choices" role="radiogroup" aria-labelledby="q-pkg"></div>
+      </div>
+      <div class="fstep" data-step="6" hidden>
+        <p class="q" id="q-budget">6. What is your expected monthly budget?</p>
+        <div class="choices" id="budget-choices" role="radiogroup" aria-labelledby="q-budget"></div>
+      </div>
+      <div class="fstep" data-step="7" hidden>
+        <p class="q" id="q-goal">7. What is your main goal right now?</p>
+        <div class="choices" role="radiogroup" aria-labelledby="q-goal">
+          <label class="choice"><input type="radio" name="goal" value="Become the trusted name in my field"><span><b>Become the trusted name in my field</b></span></label>
+          <label class="choice"><input type="radio" name="goal" value="Get more enquiries from high-paying clients"><span><b>Get more enquiries from high-paying clients</b></span></label>
+          <label class="choice"><input type="radio" name="goal" value="Save time on content creation"><span><b>Save time on content creation</b></span></label>
+          <label class="choice"><input type="radio" name="goal" value="Launch and grow my personal brand"><span><b>Launch and grow my personal brand</b></span></label>
+        </div>
+      </div>
+      <div class="fstep" data-step="8" hidden>
+        <p class="q" id="q-content">8. Where is your content today?</p>
+        <div class="choices" role="radiogroup" aria-labelledby="q-content">
+          <label class="choice"><input type="radio" name="content" value="Not posting yet"><span><b>I'm not posting yet</b></span></label>
+          <label class="choice"><input type="radio" name="content" value="Posting inconsistently"><span><b>I post, but not consistently</b></span></label>
+          <label class="choice"><input type="radio" name="content" value="Consistent, wants better results"><span><b>I post consistently and want better results</b></span></label>
+          <label class="choice"><input type="radio" name="content" value="Has a team, needs more capacity"><span><b>I have a team and need extra capacity</b></span></label>
+        </div>
+      </div>
+      <div class="fstep" data-step="9" hidden>
+        <label class="q" for="f-email">9. Email address</label>
+        <p class="help">We'll send your confirmation and next steps here.</p>
+        <input class="field" id="f-email" type="email" autocomplete="email" placeholder="you@example.com">
+      </div>
+      <div class="fstep" data-step="10" hidden>
+        <label class="q" for="f-wa">10. WhatsApp number <em>(Optional)</em></label>
+        <p class="help">So we can reach you quickly about your call.</p>
+        <input class="field" id="f-wa" type="tel" autocomplete="tel" placeholder="e.g., +234 801 234 5678">
+      </div>
+      <div class="fstep" data-step="11" hidden>
+        <p class="q" id="q-book">11. Pick a time for your discovery call</p>
+        <p class="tz-note" id="tz-note"></p>
+        <div class="days" id="day-list" role="group" aria-label="Choose a date"></div>
+        <div class="slots" id="slot-list" role="group" aria-label="Choose a time" aria-live="polite"></div>
+        <p class="chosen" id="chosen" hidden></p>
+        <p class="meetnote">A Google Meet link and calendar invite will be emailed to you as soon as you submit.</p>
+      </div>
+
+      <p class="err" id="m-err" role="alert" hidden></p>
+      <div class="nav">
+        <button type="button" class="back" id="m-back" hidden>← Back</button>
+        <span id="m-spacer"></span>
+        <button type="submit" class="btn" id="m-next">Next →</button>
+      </div>
+    </form>
+
+    <div id="m-done" class="done" hidden>
+      <div class="ico"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h3 id="done-title"></h3>
+      <p id="done-msg"></p>
+      <dl class="recap" id="recap"></dl>
+      <div class="actions" id="done-actions"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ========= SETTINGS: edit these ========= */
+const BRAND = {
+  name: "Breedge Creative",
+  // Paste your Google Apps Script Web App URL here (see apps-script-code.gs). Empty = preview mode (no real booking).
+  leadEndpoint: "https://script.google.com/macros/s/AKfycbyfXPqu4CTYRriS_S41NmqkRsKYlebGOiKPBW6NSc8iylldrkIbieMR1PXNSJwakwOm/exec"
+};
+
+/* ========= AVAILABILITY: edit these (replace with your real days and hours) =========
+   Times are in YOUR time zone. Visitors see them converted to their own time zone.
+   Days: 0 = Sunday, 1 = Monday ... 6 = Saturday. Use [] for days off. Add several ranges per day if you like. */
+const AVAIL = {
+  tzOffset: "+01:00",        // your UTC offset (Lagos = +01:00). Must match OWNER_TZ in the Apps Script.
+  durationMin: 30,           // length of each call
+  stepMin: 30,               // gap between start times offered
+  minNoticeHours: 4,         // earliest bookable time from now
+  windowDays: 14,            // how many days ahead people can book
+  hours: {
+    0: [],                      // Sunday: off
+    1: [["16:00","20:00"]],     // Monday 4pm-8pm
+    2: [["12:00","20:00"]],     // Tuesday 12pm-8pm
+    3: [["09:00","15:00"]],     // Wednesday 9am-3pm
+    4: [["12:00","20:00"]],     // Thursday 12pm-8pm
+    5: [["09:00","20:00"]],     // Friday 9am-8pm
+    6: [["09:00","20:00"]]      // Saturday 9am-8pm
+  },
+  blockedDates: []           // e.g. ["2026-12-25"] (YYYY-MM-DD, your time zone)
+};
+
+/* ========= helpers ========= */
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const svg = (inner, extra="") => `<svg viewBox="0 0 24 24" aria-hidden="true" ${extra}>${inner}</svg>`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const CHECK = svg('<path d="M5 12.5l4.5 4.5L19 7.5"/>');
+
+
+/* Strategy: 1 = one monthly review, 2 = a review every week (4 per month). */
+const TIERS = [
+  { id:"Package 1: Foundation", tier:"Package 1", name:"Foundation", line:"Get consistent. Get noticed.", fit:"Best for founders and coaches who are just starting to build their presence.", cta:"Get started with Foundation →",
+    posts:12, v:8, c:4, reviews:1, reviewLabel:"Monthly strategy review", reviewNote:"A monthly check-in to review results and plan ahead",
+    extra:"A plan of what to post and when." },
+  { id:"Package 2: Scale", tier:"Package 2", name:"Scale", line:"Turn attention into real enquiries and clients.", fit:"Best for consultants and founders who want more clients and more authority.", cta:"Get started with Scale →", pop:true,
+    posts:16, v:11, c:5, reviews:4, reviewLabel:"Weekly strategy reviews", reviewNote:"A weekly check-in to review results and plan ahead",
+    extra:"Results reviews and help shaping your message." },
+  { id:"Package 3: Dominance", tier:"Package 3", name:"Dominance", line:"Your whole personal brand, handled for you.", fit:"Best for industry leaders and top coaches who want to be the go-to name in their field.", cta:"Get started with Dominance →",
+    posts:24, v:16, c:8, reviews:4, reviewLabel:"Weekly strategy reviews", reviewNote:"A weekly check-in to review results and plan ahead",
+    extra:"A dedicated brand producer and help publishing your content everywhere." }
+];
+
+
+/* ========= application modal (one question per step) ========= */
+const modal = $("#modal"), form = $("#lead-form"), TOTAL = 11;
+let step = 1, path = "", order = null, lastFocus = null, finished = false;
+let selectedSlot = null, selectedDay = null, busy = [], slotsByDay = {};
+
+/* ========= booking: build slots from AVAIL, hide anything busy ========= */
+const pad = n => String(n).padStart(2, "0");
+const userTZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "your local time"; } catch (e) { return "your local time"; } })();
+const fmtDay = d => d.toLocaleDateString(undefined, { weekday:"long", day:"numeric", month:"long" });
+const fmtTime = d => d.toLocaleTimeString(undefined, { hour:"numeric", minute:"2-digit" });
+
+function buildSlots(){
+  const out = {}, now = Date.now(), earliest = now + AVAIL.minNoticeHours * 3600e3;
+  const ownerNow = new Date(now + parseInt(AVAIL.tzOffset) * 3600e3); // shift so UTC getters read owner-local date
+  for (let i = 0; i <= AVAIL.windowDays; i++) {
+    const base = new Date(Date.UTC(ownerNow.getUTCFullYear(), ownerNow.getUTCMonth(), ownerNow.getUTCDate() + i));
+    const ymd = `${base.getUTCFullYear()}-${pad(base.getUTCMonth()+1)}-${pad(base.getUTCDate())}`;
+    if (AVAIL.blockedDates.includes(ymd)) continue;
+    const ranges = AVAIL.hours[base.getUTCDay()] || [];
+    const list = [];
+    ranges.forEach(([from, to]) => {
+      const [fh, fm] = from.split(":").map(Number), [th, tm] = to.split(":").map(Number);
+      for (let m = fh*60+fm; m + AVAIL.durationMin <= th*60+tm; m += AVAIL.stepMin) {
+        const start = new Date(`${ymd}T${pad(Math.floor(m/60))}:${pad(m%60)}:00${AVAIL.tzOffset}`);
+        const end = new Date(start.getTime() + AVAIL.durationMin * 60e3);
+        if (start.getTime() < earliest) continue;
+        if (busy.some(b => start < b.end && end > b.start)) continue;
+        list.push({ start, end });
+      }
+    });
+    if (list.length) out[ymd] = list;
+  }
+  return out;
+}
+
+async function loadBooking(){
+  $("#tz-note").textContent = `Times are automatically shown in your local time (${userTZ}). Calls last ${AVAIL.durationMin} minutes.`;
+  $("#day-list").innerHTML = ""; $("#slot-list").innerHTML = `<span class="slot-empty">Loading available times…</span>`;
+  busy = [];
+  if (BRAND.leadEndpoint) {
+    try {
+      const r = await fetch(BRAND.leadEndpoint + "?action=busy&days=" + (AVAIL.windowDays + 2), { method:"GET" });
+      const j = await r.json();
+      busy = (j.busy || []).map(b => ({ start:new Date(b.start), end:new Date(b.end) }));
+    } catch (_) { /* fall back to showing all slots; the server re-checks on submit */ }
+  }
+  slotsByDay = buildSlots();
+  renderDays();
+}
+function renderDays(){
+  const keys = Object.keys(slotsByDay);
+  if (!keys.length) { $("#slot-list").innerHTML = `<span class="slot-empty">No times are open right now. Please check back soon or message us on WhatsApp.</span>`; return; }
+  $("#day-list").innerHTML = keys.map(k => {
+    const d = slotsByDay[k][0].start;
+    return `<button type="button" class="day" data-day="${k}" aria-pressed="false"><small>${d.toLocaleDateString(undefined,{weekday:"short"})}</small><b>${d.getDate()}</b><span>${d.toLocaleDateString(undefined,{month:"short"})}</span></button>`;
+  }).join("");
+  const keep = selectedSlot && slotsByDay[selectedDay] ? selectedDay : keys[0];
+  pickDay(keep);
+}
+function pickDay(k){
+  selectedDay = k;
+  $$(".day").forEach(b => b.setAttribute("aria-pressed", b.dataset.day === k));
+  $("#slot-list").innerHTML = slotsByDay[k].map(s => `<button type="button" class="slot" data-start="${s.start.toISOString()}" aria-pressed="${selectedSlot && selectedSlot.start.getTime() === s.start.getTime()}">${fmtTime(s.start)}</button>`).join("");
+}
+function pickSlot(iso){
+  const start = new Date(iso);
+  selectedSlot = { start, end: new Date(start.getTime() + AVAIL.durationMin * 60e3) };
+  $$(".slot").forEach(b => b.setAttribute("aria-pressed", b.dataset.start === iso));
+  const c = $("#chosen"); c.textContent = `Your call: ${fmtDay(start)} at ${fmtTime(start)} (${userTZ})`; c.hidden = false;
+  hideError();
+}
+$("#day-list").addEventListener("click", e => { const b = e.target.closest(".day"); if (b) pickDay(b.dataset.day); });
+$("#slot-list").addEventListener("click", e => { const b = e.target.closest(".slot"); if (b) pickSlot(b.dataset.start); });
+
+$("#pkg-choices").innerHTML = TIERS.map(t => `<label class="choice"><input type="radio" name="package" value="${esc(t.name)} package"><span><b>${esc(t.name)} package</b><small>${t.posts} posts a month: ${t.v} videos and ${t.c} carousels, plus ${t.reviews === 1 ? "a monthly strategy review" : "weekly strategy reviews"}</small></span></label>`).join("")
+  + `<label class="choice"><input type="radio" name="package" value="Custom package"><span><b>Custom package</b><small>Choose your own number of videos, carousels and strategy reviews</small></span></label>`
+  + `<label class="choice"><input type="radio" name="package" value="A single service"><span><b>A single service</b><small>Video editing, graphic design or content writing on its own</small></span></label>`
+  + `<label class="choice"><input type="radio" name="package" value="Not sure yet"><span><b>Not sure yet</b><small>I'd like a recommendation on the discovery call</small></span></label>`;
+
+/* Region: the device's time zone decides (Nigeria's is Africa/Lagos). Nigeria sees naira, everyone else sees dollars. */
+function detectRegion(){
+  try {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tz) return tz === "Africa/Lagos" ? "NG" : "INTL";
+    const langs = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+    if (langs.some(l => /-NG$/i.test(l))) return "NG";
+  } catch (e) {}
+  return "INTL";
+}
+const REGION = detectRegion();
+/* Nigeria sees naira. Everyone else sees dollars with the same number (₦320k = $320, ₦1.2M = $1200). */
+const BUDGETS = [
+  { ngn:"₦800,000 – ₦1,200,000", usd:"$800 – $1200" },
+  { ngn:"₦450,000 – ₦680,000",   usd:"$450 – $680" },
+  { ngn:"₦320,000 – ₦450,000",   usd:"$320 – $450" }
+];
+const CUR = REGION === "NG" ? "₦" : "$";
+$("#budget-choices").innerHTML = BUDGETS.map(b => { const t = REGION === "NG" ? b.ngn : b.usd; return `<label class="choice"><input type="radio" name="budget" value="${esc(t)}"><span><b>${esc(t)}</b></span></label>`; }).join("")
+  + `<label class="choice"><input type="radio" name="budget" value="__other"><span><b>My budget is different</b><small>Type your own monthly amount</small></span></label>`
+  + `<div id="budget-other-wrap" hidden><input class="field" id="f-budget-other" type="text" inputmode="numeric" autocomplete="off" placeholder="Amount in ${CUR === "₦" ? "naira, e.g. 380000" : "dollars, e.g. 380"}" aria-label="Your monthly budget"></div>`;
+$("#budget-choices").addEventListener("change", () => {
+  const o = picked("budget") === "__other";
+  $("#budget-other-wrap").hidden = !o;
+  if (o) $("#f-budget-other").focus();
+});
+function budgetValue(){
+  const v = picked("budget");
+  if (v !== "__other") return v;
+  const n = val("f-budget-other").replace(/[^0-9]/g, "");
+  return n ? CUR + Number(n).toLocaleString("en-US") : "";
+}
+
+const val = id => $("#" + id).value.trim();
+const picked = name => (form.querySelector(`input[name="${name}"]:checked`) || {}).value || "";
+const validators = {
+  1: () => val("f-name") ? "" : "Please enter your full name.",
+  2: () => val("f-biz") ? "" : "Please enter your business or brand name.",
+  3: () => val("f-about") ? "" : "Please tell us about your brand.",
+  5: () => picked("package") ? "" : "Please choose a package.",
+  6: () => !picked("budget") ? "Please choose your expected monthly budget." : (budgetValue() ? "" : "Please type your monthly budget amount."),
+  7: () => picked("goal") ? "" : "Please choose your main goal.",
+  8: () => picked("content") ? "" : "Please tell us where your content is today.",
+  9: () => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val("f-email")) ? "" : "Enter a valid email address, like you@example.com.",
+  11: () => selectedSlot ? "" : "Please pick a date and time for your call."
+};
+function showError(m){ const e = $("#m-err"); e.textContent = m; e.hidden = false; }
+function hideError(){ $("#m-err").hidden = true; }
+
+function showStep(n){
+  step = n;
+  $$(".fstep", form).forEach(el => el.hidden = +el.dataset.step !== n);
+  hideError();
+  $("#m-progress").textContent = `Step ${n} of ${TOTAL}`;
+  $("#m-bar").style.width = (n / TOTAL * 100) + "%";
+  $("#m-back").hidden = n === 1;
+  $("#m-next").textContent = n === TOTAL ? "Confirm booking" : "Next →";
+  if (n === 11) loadBooking();
+  const cur = $(`.fstep[data-step="${n}"]`, form);
+  const target = cur.querySelector("input:checked") || cur.querySelector("input,textarea");
+  if (target) setTimeout(() => target.focus({ preventScroll:true }), 30);
+}
+
+function openModal(p, ord){
+  order = ord || null;
+  path = p || "General strategy call";
+  finished = false;
+  selectedSlot = null; selectedDay = null; $("#chosen").hidden = true;
+  form.reset(); $("#budget-other-wrap").hidden = true;
+  $("#m-done").hidden = true; form.hidden = false; $("#m-head").hidden = false;
+  $("#m-next").disabled = false;
+  const note = $("#pkg-note");
+  let pre = "";
+  if (/^Package 1/.test(path)) pre = "Foundation package";
+  else if (/^Package 2/.test(path)) pre = "Scale package";
+  else if (/^Package 3/.test(path)) pre = "Dominance package";
+  else if (/^Single service/.test(path)) pre = "A single service";
+  if (order) {
+    const first = order.lines[0];
+    pre = first && first.label === "Package" ? first.text + " package" : "Custom package";
+    note.textContent = "Your build: " + order.lines.map(l => `${l.label}: ${l.text}`).join(" · ");
+    note.hidden = false;
+  } else if (/^Single service/.test(path)) {
+    note.textContent = "You asked about: " + path.replace("Single service: ", "");
+    note.hidden = false;
+  } else note.hidden = true;
+  const radio = pre && form.querySelector(`input[name="package"][value="${pre}"]`);
+  if (radio) radio.checked = true;
+  lastFocus = document.activeElement;
+  modal.classList.add("open");
+  document.body.style.overflow = "hidden";
+  showStep(1);
+}
+function closeModal(){
+  modal.classList.remove("open");
+  document.body.style.overflow = "";
+  if (lastFocus && lastFocus.focus) lastFocus.focus();
+}
+
+form.addEventListener("submit", e => { e.preventDefault(); next(); });
+$("#m-back").addEventListener("click", () => { if (step > 1) showStep(step - 1); });
+function next(){
+  const err = (validators[step] || (() => ""))();
+  if (err) { showError(err); return; }
+  if (step === TOTAL) { submitApplication(); return; }
+  showStep(step + 1);
+}
+
+function collect(){
+  return {
+    full_name: val("f-name"), business_name: val("f-biz"), business_description: val("f-about"),
+    website: val("f-site"), social_handle: val("f-social"),
+    package: picked("package"), custom_build: order ? order.lines.map(l => `${l.label}: ${l.text}`).join("; ") : "",
+    budget: budgetValue(), budget_currency: REGION === "NG" ? "NGN" : "USD", entry_point: path, main_goal: picked("goal"), content_today: picked("content"),
+    email: val("f-email"), whatsapp: val("f-wa"), submitted_at: new Date().toISOString(),
+    call_start: selectedSlot ? selectedSlot.start.toISOString() : "",
+    call_end: selectedSlot ? selectedSlot.end.toISOString() : "",
+    client_timezone: userTZ
+  };
+}
+async function submitApplication(){
+  const data = collect(), btn = $("#m-next");
+  if (!BRAND.leadEndpoint) { finish(data, false); return; }
+  btn.disabled = true; btn.textContent = "Booking…";
+  try {
+    const r = await fetch(BRAND.leadEndpoint, { method:"POST", headers:{ "Content-Type":"text/plain;charset=utf-8" }, body: JSON.stringify(data) });
+    const j = await r.json();
+    if (j && j.ok) { finish(data, true); return; }
+    btn.disabled = false; btn.textContent = "Confirm booking";
+    if (j && j.error === "slot_taken") {
+      selectedSlot = null; $("#chosen").hidden = true;
+      await loadBooking();
+      showError("Sorry, that time was just taken. Please pick another one.");
+    } else showError("We couldn't book your call. Please try again.");
+  } catch (_) {
+    btn.disabled = false; btn.textContent = "Confirm booking";
+    showError("We couldn't send your booking. Check your connection and try again.");
+  }
+}
+function finish(data, sent){
+  finished = true;
+  form.hidden = true; $("#m-head").hidden = true;
+  const first = data.full_name.split(" ")[0];
+  const callWhen = `${fmtDay(selectedSlot.start)} at ${fmtTime(selectedSlot.start)} (${userTZ})`;
+  const rows = [["Call",callWhen],["Name",data.full_name],["Business",data.business_name],["Email",data.email],["Package",data.package],["Budget",data.budget],["Goal",data.main_goal]];
+  if (data.custom_build) rows.splice(4, 0, ["Build", data.custom_build]);
+  if (data.whatsapp) rows.push(["WhatsApp", data.whatsapp]);
+  $("#recap").innerHTML = rows.map(r => `<dt>${r[0]}</dt><dd>${esc(r[1])}</dd>`).join("");
+  $("#done-title").textContent = sent ? "Your call is booked" : "Booking ready (preview)";
+  $("#done-msg").textContent = sent
+    ? `Thanks, ${first}. A Google Meet invite for ${callWhen} is on its way to ${data.email}. Check your inbox.`
+    : `Thanks, ${first}. This preview isn't connected to Google Calendar yet, so no invite was sent. Add your Apps Script URL to go live.`;
+  const acts = [];
+  if (!sent) acts.push(`<button class="btn sec" type="button" data-act="copy">Copy my details</button>`);
+  acts.push(`<button class="btn sec" type="button" data-act="close">Done</button>`);
+  $("#done-actions").innerHTML = acts.join("");
+  $("#m-done").hidden = false;
+  $("#m-done").dataset.text = rows.map(r => r[0] + ": " + r[1]).join("\n");
+}
+$("#m-done").addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  if (b.dataset.act === "close") { closeModal(); return; }
+  try { await navigator.clipboard.writeText($("#m-done").dataset.text); b.textContent = "Copied"; }
+  catch (_) { const r = document.createRange(); r.selectNodeContents($("#recap")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = "Selected, press copy"; }
+});
+$("#m-close").addEventListener("click", closeModal);
+modal.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape" && modal.classList.contains("open")) closeModal(); });
+
+
+/* ========= open the form =========
+   Any element with a data-open attribute opens it. The value is optional and pre-selects the package step:
+   data-open  /  data-open="Package 1: Foundation"  /  "Package 2: Scale"  /  "Package 3: Dominance"  /  "Single service: Video Editing"
+   Or call it from your own code: openModal("Package 2: Scale");                                              */
+document.addEventListener("click", e => {
+  const o = e.target.closest("[data-open]");
+  if (o) openModal(o.dataset.open || "");
+});
+</script>
+</body>
+</html>
